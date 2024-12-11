@@ -64,7 +64,7 @@ export class ImageRenderer extends MediaViewer {
             startX = e.clientX; // Update start X for next move
             startY = e.clientY; // Update start Y for next move
             // Apply zoom and updated position via transform
-            this.imageElement.style.transform = `translate(${this.movedX}px, ${this.movedY}px)`; 
+            this.updateTransform(); 
         });
 
         window.addEventListener('mouseup', () => {
@@ -74,8 +74,12 @@ export class ImageRenderer extends MediaViewer {
 
     private zoom(amount: number) {
         this.scale = Math.min(Math.max(0.5, this.scale + amount), 5); // keeping the scale between 0.5 and 5
-        this.imageElement.style.transform = `scale(${this.scale})`; // transforming image as per the current state of scale
+        this.updateTransform(); // transforming image as per the current state of scale
     }
+
+    private updateTransform() {
+        this.imageElement.style.transform = `scale(${this.scale}) translate(${this.movedX}px, ${this.movedY}px)`;
+      }    
 
     destroy(): void {
 
