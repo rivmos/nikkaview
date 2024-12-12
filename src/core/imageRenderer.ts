@@ -13,6 +13,7 @@ export class ImageRenderer extends MediaViewer {
     private movedX: number;
     private movedY: number;
 
+
     constructor(container: HTMLElement, url: string) {
         super(container)
         this.url = url;
@@ -22,7 +23,7 @@ export class ImageRenderer extends MediaViewer {
         this.movedY = 0; // initial image moved along Y
 
         this.imageElement = new Image();
-        this.imageElement.style.position = 'absolute';
+        // this.imageElement.style.position = 'absolute';
         this.imageElement.style.top = '0';
         this.imageElement.style.left = '0';
         this.imageElement.src = this.url;
@@ -35,6 +36,8 @@ export class ImageRenderer extends MediaViewer {
         this.imageElement.addEventListener('dragstart', (e) => {
             e.preventDefault()
         })
+
+        this.imageElement.addEventListener('dblclick', this.openInModal.bind(this))
 
         this.container.appendChild(this.imageElement)
 
@@ -79,7 +82,9 @@ export class ImageRenderer extends MediaViewer {
 
     private updateTransform() {
         this.imageElement.style.transform = `scale(${this.scale}) translate(${this.movedX}px, ${this.movedY}px)`;
-      }    
+      }  
+      
+    
 
     destroy(): void {
 
