@@ -4,8 +4,20 @@ export class Modal {
     private contentElement: HTMLDivElement; // Container for modal content
     private closeButton: HTMLButtonElement; // Close button
     private isOpen: boolean = false; // Tracks if the modal is open
+    // zoom state
+    private scale: number;
+
+    // drag and pan state
+    private isDragging: boolean;
+    private movedX: number;
+    private movedY: number;
 
     constructor() {
+        this.scale = 1; // initial zoom state
+        this.isDragging = false; // intial image isDragging state
+        this.movedX = 0; // initial image moved along X
+        this.movedY = 0; // initial image moved along Y
+
         // Create the main modal container (BackDrop) with styling
         this.modalElement = document.createElement('div');
         this.modalElement.style.position = 'fixed';
@@ -55,6 +67,51 @@ export class Modal {
 
         // Append modal to the DOM
         document.body.appendChild(this.modalElement);
+        this.initEvents();
+    }
+
+    private initEvents() {
+        let startX = 0;
+        let startY = 0;
+
+        this.contentElement.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            this.zoom(e.deltaY < 0 ? 0.1 : -0.1); // deltaY +ve wheel down, so for wheel down we zoom out by -0.1
+        });
+
+        this.contentElement.addEventListener('mousedown', (e) => {
+            this.isDragging = true; // Enable dragging state
+            startX = e.clientX; // Record initial X position
+            startY = e.clientY; // Record initial Y position
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!this.isDragging) return; // Exit if not dragging
+            this.movedX += e.clientX - startX; // Calculate horizontal movement
+            this.movedY += e.clientY - startY; // Calculate vertical movement
+            startX = e.clientX; // Update start X for next move
+            startY = e.clientY; // Update start Y for next move
+            // Apply zoom and updated position via transform
+            this.updateTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            this.isDragging = false; // Disable dragging state
+        });
+
+        // preventing the image fade dragging while panning and dragging event
+        this.contentElement.addEventListener('dragstart', (e) => {
+            e.preventDefault()
+        })
+    }
+
+    private zoom(amount: number) {
+        this.scale = Math.min(Math.max(0.5, this.scale + amount), 5); // keeping the scale between 0.5 and 5
+        this.updateTransform(); // transforming image as per the current state of scale
+    }
+
+    private updateTransform() {
+        this.contentElement.style.transform = `scale(${this.scale}) translate(${this.movedX}px, ${this.movedY}px)`;
     }
 
     /**
