@@ -1,49 +1,107 @@
 export class Modal {
-    // Private properties for encapsulating modal-related elements
-    private modalElement: HTMLDivElement; // Main modal container
-    private contentElement: HTMLDivElement; // Container for modal content
-    private closeButton: HTMLButtonElement; // Close button
-    private isOpen: boolean = false; // Tracks if the modal is open
+    private modalElement: HTMLDivElement;
+    private contentElement: HTMLDivElement;
+    private actionElement: HTMLDivElement;
+    private rotateButton: HTMLButtonElement;
+    private closeButton: HTMLButtonElement;
+    private flipHorizontalButton: HTMLButtonElement;
+    private flipVerticalButton: HTMLButtonElement;
+    private fullScreenButton: HTMLButtonElement;
+
     // zoom state
     private scale: number;
+    private targetScale: number;
+    private isZooming: boolean;
 
     // drag and pan state
     private isDragging: boolean;
     private movedX: number;
     private movedY: number;
+    private targetMovedX: number;
+    private targetMovedY: number;
+    private dragTweening: boolean;
+    private rotation: number;
+
+    // orientation state
+    private isFlipped: boolean
 
     constructor() {
         this.scale = 1; // initial zoom state
-        this.isDragging = false; // intial image isDragging state
+        this.targetScale = 1; // target scale for smooth zooming
+        this.isZooming = false; // flag to indicate zooming state
+
+        this.isDragging = false; // initial image isDragging state
         this.movedX = 0; // initial image moved along X
         this.movedY = 0; // initial image moved along Y
+        this.targetMovedX = 0;
+        this.targetMovedY = 0;
+        this.dragTweening = false;
+        this.rotation = 0;
+        this.isFlipped = false;
 
-        // Create the main modal container (BackDrop) with styling
+        // Create modal container
         this.modalElement = document.createElement('div');
-        this.modalElement.style.position = 'fixed';
-        this.modalElement.style.top = '0';
-        this.modalElement.style.left = '0';
-        this.modalElement.style.width = '100vw';
-        this.modalElement.style.height = '100vh';
-        this.modalElement.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'; // Dimmed background
-        this.modalElement.style.display = 'flex';
-        this.modalElement.style.alignItems = 'center';
-        this.modalElement.style.justifyContent = 'center';
-        this.modalElement.style.zIndex = '9999'; // Ensure modal is above all elements
-        this.modalElement.style.opacity = '0'; // Hidden initially
-        this.modalElement.style.transition = 'opacity 0.3s ease'; // Smooth open/close transition
+        this.modalElement.classList.add('modal-element');
 
-        // Create content container for displaying dynamic content
+        // Create button plates
+        this.actionElement = document.createElement('div');
+        this.actionElement.classList.add('action-element');
+        this.modalElement.appendChild(this.actionElement)
+
+        this.rotateButton = document.createElement('button');
+        this.rotateButton.innerText = 'R';;
+        this.rotateButton.classList.add('button');
+        this.actionElement.appendChild(this.rotateButton);
+
+        this.flipHorizontalButton = document.createElement('button');
+        this.flipHorizontalButton.innerText = 'H';
+        this.flipHorizontalButton.classList.add('button');
+        this.actionElement.appendChild(this.flipHorizontalButton);
+
+
+        this.flipVerticalButton = document.createElement('button');
+        this.flipVerticalButton.innerText = 'V';
+        this.flipVerticalButton.classList.add('button');
+        this.actionElement.appendChild(this.flipVerticalButton);
+
+        this.fullScreenButton = document.createElement('button');
+        this.fullScreenButton.innerText = 'F';;
+        this.fullScreenButton.classList.add('button');
+        this.actionElement.appendChild(this.fullScreenButton);
+
+        this.rotateButton.addEventListener('click', (event) => {
+            if (this.rotation >= 270) this.contentElement.style.transition = 'none';
+            this.rotation >= 270 ? this.rotation = 0 : this.rotation += 90
+            this.updateTransform();
+        });
+
+        this.flipHorizontalButton.addEventListener('click', (event) => {
+            this.flip('horizontal');
+        });
+
+        this.flipVerticalButton.addEventListener('click', (event) => {
+            this.flip('vertical');
+        });
+
+        this.fullScreenButton.addEventListener('click', (event) => {
+            this.goFullScreen();
+        });
+
+
+
+        // Create content container
         this.contentElement = document.createElement('div');
         this.contentElement.style.position = 'relative';
         this.contentElement.style.maxWidth = '90%';
         this.contentElement.style.maxHeight = '90%';
+        this.contentElement.style.transition = "transform 1s ease";  // 1s for 1 second, ease for smooth easing
         this.modalElement.appendChild(this.contentElement);
 
-        // Create close button with minimal UI
+        // Create close button
         this.closeButton = document.createElement('button');
         this.closeButton.innerText = '✕';
         this.closeButton.style.position = 'absolute';
+        
         this.closeButton.style.top = '10px';
         this.closeButton.style.right = '10px';
         this.closeButton.style.background = 'transparent';
@@ -51,21 +109,23 @@ export class Modal {
         this.closeButton.style.border = 'none';
         this.closeButton.style.fontSize = '24px';
         this.closeButton.style.cursor = 'pointer';
-        this.closeButton.addEventListener('click', this.close.bind(this)); // Close modal on click
+        this.closeButton.addEventListener('click', () => {
+            this.close();
+            this.reset();
+            this.updateTransform();
+        });
 
         this.modalElement.appendChild(this.closeButton);
 
-        // Close modal when clicking on the backdrop
         this.modalElement.addEventListener('click', (event) => {
             if (event.target === this.modalElement) {
                 this.close();
+                this.reset();
+                this.updateTransform();
             }
         });
 
-        // Close modal on pressing the Escape key
-        document.addEventListener('keydown', this.handleKeyDown.bind(this));
-
-        // Append modal to the DOM
+        // Append to body
         document.body.appendChild(this.modalElement);
         this.initEvents();
     }
@@ -74,9 +134,15 @@ export class Modal {
         let startX = 0;
         let startY = 0;
 
+        this.contentElement.addEventListener('dragstart', (e) => {
+            e.preventDefault(); // Prevent native drag behavior
+        });
+
+        // Debounced zoom effect
         this.contentElement.addEventListener('wheel', (e) => {
             e.preventDefault();
-            this.zoom(e.deltaY < 0 ? 0.1 : -0.1); // deltaY +ve wheel down, so for wheel down we zoom out by -0.1
+            const delta = e.deltaY < 0 ? 0.1 : -0.1; // zoom direction
+            this.debounceZoom(delta);
         });
 
         this.contentElement.addEventListener('mousedown', (e) => {
@@ -87,71 +153,84 @@ export class Modal {
 
         window.addEventListener('mousemove', (e) => {
             if (!this.isDragging) return; // Exit if not dragging
-            this.movedX += e.clientX - startX; // Calculate horizontal movement
-            this.movedY += e.clientY - startY; // Calculate vertical movement
+            this.targetMovedX += e.clientX - startX; // Calculate horizontal movement
+            this.targetMovedY += e.clientY - startY; // Calculate vertical movement
             startX = e.clientX; // Update start X for next move
             startY = e.clientY; // Update start Y for next move
-            // Apply zoom and updated position via transform
+            this.dragTweening = true; // Trigger smooth transition of dragging
             this.updateTransform();
         });
 
         window.addEventListener('mouseup', () => {
             this.isDragging = false; // Disable dragging state
         });
-
-        // preventing the image fade dragging while panning and dragging event
-        this.contentElement.addEventListener('dragstart', (e) => {
-            e.preventDefault()
-        })
     }
 
-    private zoom(amount: number) {
-        this.scale = Math.min(Math.max(0.5, this.scale + amount), 5); // keeping the scale between 0.5 and 5
-        this.updateTransform(); // transforming image as per the current state of scale
+    // Debounced zoom function
+    private debounceZoom(amount: number) {
+        if (this.isZooming) return; // Prevent zooming until the previous zoom completes
+        this.isZooming = true;
+        setTimeout(() => {
+            this.zoom(amount);
+            this.isZooming = false;
+        }, 100); // Adjust debounce delay as needed
     }
 
-    private updateTransform() {
-        this.contentElement.style.transform = `scale(${this.scale}) translate(${this.movedX}px, ${this.movedY}px)`;
-    }
-
-    /**
-     * Opens the modal and displays the provided content.
-     * @param content HTMLElement to display inside the modal.
-     */
     open(content: HTMLElement) {
-        if (this.isOpen) return; // Prevent duplicate opens
-
-        // Attach new content to the modal
+        // Attach content to the modal
         this.contentElement.innerHTML = '';
         this.contentElement.appendChild(content);
 
-        // Show modal with styles
-        this.modalElement.style.display = 'flex';
-        this.modalElement.setAttribute('aria-hidden', 'false'); // Accessibility attribute
-        this.modalElement.style.opacity = '1'; // Make modal visible
-        this.modalElement.style.pointerEvents = 'all'; // Enable interaction
-        this.isOpen = true; // Update modal state
+        // Show modal
+        this.modalElement.style.opacity = '1';
+        this.modalElement.style.pointerEvents = 'all';
     }
 
-    /**
-     * Closes the modal.
-     */
     close() {
-        if (!this.isOpen) return; // Prevent duplicate closes
-
-        // Hide modal with styles
-        this.modalElement.style.opacity = '0'; // Make modal invisible
-        this.modalElement.style.pointerEvents = 'none'; // Disable interaction
-        this.isOpen = false; // Update modal state
+        this.modalElement.style.opacity = '0';
+        this.modalElement.style.pointerEvents = 'none';
     }
 
-    /**
-     * Handles keyboard interactions for accessibility.
-     * @param event KeyboardEvent for capturing key presses.
-     */
-    private handleKeyDown(event: KeyboardEvent) {
-        if (event.key === 'Escape' && this.isOpen) {
-            this.close(); // Close modal on Escape key
+    reset() {
+        this.scale = 1; // initial zoom state
+        this.movedX = 0; // initial image moved along X
+        this.movedY = 0; // initial image moved along Y
+        this.rotation = 0;
+    }
+    destroy() {
+        // Clean up modal
+        this.modalElement.remove();
+    }
+
+    private zoom(amount: number) {
+        this.targetScale = Math.min(Math.max(0.5, this.targetScale + amount), 5); // keep the scale between 0.5 and 5
+        this.updateTransform(); // Apply the updated scale and translation
+    }
+
+    private flip(orientation: 'vertical' | 'horizontal') {
+        orientation === 'horizontal' ? this.contentElement.style.transform = `scaleX(${this.isFlipped ? 1 : -1})` : orientation === 'vertical' ? this.contentElement.style.transform = `scaleY(${this.isFlipped ? 1 : -1})` : this.contentElement.style.transform = `scaleX(1) scaleY(1)`
+        this.isFlipped = !this.isFlipped
+    }
+
+    private goFullScreen() {
+        if (document.fullscreenElement) {
+            // If there is a fullscreen element, exit full screen.
+            document.exitFullscreen();
+            return;
         }
+        this.contentElement.style.width = '100%'
+        this.contentElement.style.height = '100%'
+        this.contentElement.requestFullscreen()
+    }
+
+    private updateTransform() {
+        if (this.dragTweening) {
+            // Smooth drag effect using interpolation
+            this.movedX += (this.targetMovedX - this.movedX) * 0.1; // Apply easing
+            this.movedY += (this.targetMovedY - this.movedY) * 0.1; // Apply easing
+        }
+
+        this.contentElement.style.transition = 'transform 0.2s ease-out'; // smooth transition
+        this.contentElement.style.transform = `scale(${this.targetScale}) translate(${this.movedX}px, ${this.movedY}px) rotate(${this.rotation}deg)`;
     }
 }
