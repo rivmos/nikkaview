@@ -2,10 +2,12 @@
   "name": "nikkaview",
   "version": "1.0.0",
   "description": "a library that supports viewing images, pdfs and text content also in modals",
-  "main": "index.js",
+  "main": "dist/nikkaview.umd.js",
+  "module": "dist/nikkaview.es.js",
   "scripts": {
-    "start": "vite", 
-    "build": "vite build", 
+    "start": "vite",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && vite build",
     "preview": "vite preview"
   },
   "keywords": [
@@ -21,14 +23,15 @@
   ],
   "author": "riv",
   "license": "ISC",
-  "dependencies": {
-    "@types/react": "^19.0.1",
-    "@types/react-dom": "^19.0.2",
+  "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
     "typescript": "^5.7.2",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "vite-plugin-dts": "^4.3.0"
   }
 }
