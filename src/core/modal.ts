@@ -2,6 +2,7 @@ export class Modal {
     private modalElement: HTMLDivElement;
     private contentElement: HTMLDivElement;
     private actionElement: HTMLDivElement;
+
     private rotateButton: HTMLButtonElement;
     private closeButton: HTMLButtonElement;
     private flipHorizontalButton: HTMLButtonElement;
@@ -91,24 +92,14 @@ export class Modal {
 
         // Create content container
         this.contentElement = document.createElement('div');
-        this.contentElement.style.position = 'relative';
-        this.contentElement.style.maxWidth = '90%';
-        this.contentElement.style.maxHeight = '90%';
-        this.contentElement.style.transition = "transform 1s ease";  // 1s for 1 second, ease for smooth easing
+        this.contentElement.classList.add('content-element');
         this.modalElement.appendChild(this.contentElement);
 
         // Create close button
         this.closeButton = document.createElement('button');
         this.closeButton.innerText = '✕';
-        this.closeButton.style.position = 'absolute';
-        
-        this.closeButton.style.top = '10px';
-        this.closeButton.style.right = '10px';
-        this.closeButton.style.background = 'transparent';
-        this.closeButton.style.color = '#fff';
-        this.closeButton.style.border = 'none';
-        this.closeButton.style.fontSize = '24px';
-        this.closeButton.style.cursor = 'pointer';
+        this.closeButton.classList.add('close-button');
+
         this.closeButton.addEventListener('click', () => {
             this.close();
             this.reset();
@@ -127,6 +118,12 @@ export class Modal {
 
         // Append to body
         document.body.appendChild(this.modalElement);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.close();
+            }
+        });
         this.initEvents();
     }
 
@@ -233,4 +230,5 @@ export class Modal {
         this.contentElement.style.transition = 'transform 0.2s ease-out'; // smooth transition
         this.contentElement.style.transform = `scale(${this.targetScale}) translate(${this.movedX}px, ${this.movedY}px) rotate(${this.rotation}deg)`;
     }
+    
 }
