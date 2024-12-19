@@ -11,9 +11,7 @@ export class ImageRenderer extends MediaViewer {
         this.url = url;
 
         this.imageElement = new Image();
-        // this.imageElement.style.position = 'absolute';
-        this.imageElement.style.top = '0';
-        this.imageElement.style.left = '0';
+        this.imageElement.classList.add('image-element');
         this.imageElement.src = this.url;
 
         this.imageElement.onload = (e) => {

@@ -7,11 +7,7 @@ export abstract class MediaViewer {
     
     constructor(container: HTMLElement) {
         this.container = container;
-        this.container.style.position = 'relative';
-        this.container.style.overflow = 'hidden';
-        this.container.style.display = 'flex';
-        this.container.style.alignItems = 'center';
-        this.container.style.justifyContent = 'center';
+        this.container.classList.add('container');
     }
 
     abstract destroy(): void 
