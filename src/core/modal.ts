@@ -50,23 +50,23 @@ export class Modal {
         this.modalElement.appendChild(this.actionElement)
 
         this.rotateButton = document.createElement('button');
-        this.rotateButton.innerText = 'R';;
+        // this.rotateButton.innerText = 'R';;
         this.rotateButton.classList.add('button');
         this.actionElement.appendChild(this.rotateButton);
 
         this.flipHorizontalButton = document.createElement('button');
-        this.flipHorizontalButton.innerText = 'H';
+        // this.flipHorizontalButton.innerText = 'H';
         this.flipHorizontalButton.classList.add('button');
         this.actionElement.appendChild(this.flipHorizontalButton);
 
 
         this.flipVerticalButton = document.createElement('button');
-        this.flipVerticalButton.innerText = 'V';
+        // this.flipVerticalButton.innerText = 'V';
         this.flipVerticalButton.classList.add('button');
         this.actionElement.appendChild(this.flipVerticalButton);
 
         this.fullScreenButton = document.createElement('button');
-        this.fullScreenButton.innerText = 'F';;
+        // this.fullScreenButton.innerText = 'F';;
         this.fullScreenButton.classList.add('button');
         this.actionElement.appendChild(this.fullScreenButton);
 

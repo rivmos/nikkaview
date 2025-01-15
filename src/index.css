@@ -58,6 +58,10 @@
     justify-content: center;
     color: white;
     text-align: center;
+    background-image: url('./assets/images/icons.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 80%;
 }
 
 .action-element .button {
